@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,30 +104,81 @@ public class UserServices {
 //    }
 
 
-    private AtomicInteger successfulUploads = new AtomicInteger(0);
+//    private AtomicInteger successfulUploads = new AtomicInteger(0);
+//    private AtomicInteger failedUploads = new AtomicInteger(0);
+//
+//    public MessageResponse uploadCSV(MultipartFile file) {
+//        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+//            int threadCount = 100000; // Adjust the number of threads based on your server's capabilities
+//            ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+//            executor.setCorePoolSize(threadCount);
+//            executor.setMaxPoolSize(threadCount);
+//            executor.initialize();
+//
+//            String line;
+//            reader.readLine(); // Skip the header line
+//
+//            while ((line = reader.readLine()) != null) {
+//                if (!line.isEmpty()) {
+//                    String finalLine = line;
+//                    executor.submit(() -> processCSVLine(finalLine));
+//                }
+//            }
+//
+//            // Wait for all threads to complete
+//            executor.getThreadPoolExecutor().shutdown();
+//            while (!executor.getThreadPoolExecutor().isTerminated()) {
+//            }
+//
+//            return new MessageResponse("Successfully processed " + successfulUploads.get() +
+//                    " records, with " + failedUploads.get() + " failures.");
+//        } catch (Exception e) {
+//            return new MessageResponse("Error processing CSV file: " + e.getMessage());
+//        }
+//    }
+//
+//    private void processCSVLine(String line) {
+//        try {
+//            String[] data = line.split(",");
+//            if (data.length >= 2) {
+//                User user = new User();
+//                user.setName(data[0]);
+//                user.setMobile(data[1]);
+//                userRepository.save(user);
+//                successfulUploads.incrementAndGet();
+//            } else {
+//                failedUploads.incrementAndGet();
+//            }
+//        } catch (Exception e) {
+//            failedUploads.incrementAndGet();
+//        }
+//    }
+//
+
+
+////////////////////
+private AtomicInteger successfulUploads = new AtomicInteger(0);
     private AtomicInteger failedUploads = new AtomicInteger(0);
 
     public MessageResponse uploadCSV(MultipartFile file) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            int threadCount = 100000; // Adjust the number of threads based on your server's capabilities
-            ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-            executor.setCorePoolSize(threadCount);
-            executor.setMaxPoolSize(threadCount);
-            executor.initialize();
+        int threadCount = 10; // Number of threads to use for parallel processing
 
+        Executor executor = new TaskExecutorAdapter(threadCount);
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line;
             reader.readLine(); // Skip the header line
 
             while ((line = reader.readLine()) != null) {
                 if (!line.isEmpty()) {
                     String finalLine = line;
-                    executor.submit(() -> processCSVLine(finalLine));
+                    executor.execute(() -> processCSVLine(finalLine));
                 }
             }
 
             // Wait for all threads to complete
-            executor.getThreadPoolExecutor().shutdown();
-            while (!executor.getThreadPoolExecutor().isTerminated()) {
+            while (successfulUploads.get() + failedUploads.get() < 10_000_000) {
+                Thread.sleep(1000); // Adjust the polling interval as needed
             }
 
             return new MessageResponse("Successfully processed " + successfulUploads.get() +
@@ -153,9 +205,18 @@ public class UserServices {
         }
     }
 
+    private class TaskExecutorAdapter implements Executor {
+        private final int threadCount;
 
+        public TaskExecutorAdapter(int threadCount) {
+            this.threadCount = threadCount;
+        }
 
-
+        @Override
+        public void execute(Runnable command) {
+            new Thread(command).start();
+        }
+    }
 
 
 }
