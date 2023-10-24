@@ -177,8 +177,8 @@ private AtomicInteger successfulUploads = new AtomicInteger(0);
             }
 
             // Wait for all threads to complete
-            while (successfulUploads.get() + failedUploads.get() < 10_000_000) {
-                Thread.sleep(1000); // Adjust the polling interval as needed
+            while (successfulUploads.get() + failedUploads.get() < 10) {
+                Thread.sleep(10); // Adjust the polling interval as needed
             }
 
             return new MessageResponse("Successfully processed " + successfulUploads.get() +
@@ -216,6 +216,11 @@ private AtomicInteger successfulUploads = new AtomicInteger(0);
         public void execute(Runnable command) {
             new Thread(command).start();
         }
+    }
+
+    public List<User> getAll(){
+      return   userRepository.findAll();
+
     }
 
 
