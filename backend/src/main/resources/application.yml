@@ -14,8 +14,5 @@ spring:
         format_sql: true
   servlet:
      multipart:
-          max-file-size: 10GB
-          max-request-size: 10GB
-#          csv:
-#            file:
-#              path: file:/path/to/your/csvfile.csv
+          max-file-size: 1GB
+          max-request-size: 1GB
