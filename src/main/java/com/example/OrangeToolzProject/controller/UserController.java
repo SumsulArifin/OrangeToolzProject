@@ -1,6 +1,7 @@
 package com.example.OrangeToolzProject.controller;
+
 import com.example.OrangeToolzProject.entity.User;
-import com.example.OrangeToolzProject.service.MessageResponse;
+import com.example.OrangeToolzProject.util.MessageResponse;
 import com.example.OrangeToolzProject.service.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
